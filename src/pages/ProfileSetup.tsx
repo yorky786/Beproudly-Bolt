@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Camera, Video, Upload, Flame } from 'lucide-react';
+import { Flame } from 'lucide-react';
+import VideoRecorder from '../components/VideoRecorder';
+import { uploadVideo } from '../utils/video';
 
 export default function ProfileSetup() {
   const { updateProfile } = useAuth();
@@ -135,53 +137,73 @@ export default function ProfileSetup() {
     );
   }
 
+  const handleVideoRecorded = async (blob: Blob, duration: number) => {
+    if (!formData.name) {
+      alert('Please complete the first step before adding video');
+      setStep(1);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await updateProfile.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const { data: uploadData, error: uploadError } = await uploadVideo(
+        blob,
+        user.id,
+        'profiles'
+      );
+
+      if (uploadError || !uploadData) throw uploadError;
+
+      const { error: updateError } = await updateProfile({
+        profile_video_url: uploadData.url,
+        video_thumbnail_url: uploadData.thumbnailUrl,
+        video_duration: duration,
+      });
+
+      if (updateError) throw updateError;
+
+      window.location.reload();
+    } catch (err) {
+      console.error('Error uploading video:', err);
+      alert('Failed to upload video. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] flex items-center justify-center p-4">
-      <div className="bg-[#2a2a2a] rounded-3xl shadow-2xl border border-[#ff5555]/20 p-8 w-full max-w-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="bg-gradient-to-r from-[#ff5555] to-[#ff9500] rounded-full p-3 shadow-lg shadow-[#ff5555]/50">
-            <Video className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#ff5555] to-[#ff9500] bg-clip-text text-transparent">
-              Add Your Video
-            </h2>
-            <p className="text-white/70 text-sm">Record a 30-60 second introduction</p>
-          </div>
+      <div className="bg-[#2a2a2a] rounded-3xl shadow-2xl border border-[#ff5555]/20 p-8 w-full max-w-2xl">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#ff5555] to-[#ff9500] bg-clip-text text-transparent mb-2">
+            Add Your Profile Video
+          </h2>
+          <p className="text-white/70 text-sm">
+            Stand out with a video introduction
+          </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-[#ff5555]/30 rounded-2xl p-12 text-center bg-[#1a1a1a]/50">
-            <div className="flex justify-center mb-4">
-              <div className="bg-gradient-to-r from-[#ff5555] to-[#ff9500] rounded-full p-6 shadow-lg shadow-[#ff5555]/30">
-                <Video className="w-12 h-12 text-white" />
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Video Profile Coming Soon
-            </h3>
-            <p className="text-white/70 mb-6">
-              Video recording and upload functionality will be available in the next update
-            </p>
-            <div className="flex gap-3 justify-center flex-wrap">
-              <button className="px-6 py-2 bg-[#3a3a3a] text-white rounded-xl font-medium hover:bg-[#4a4a4a] transition flex items-center gap-2 border border-[#ff5555]/20">
-                <Camera className="w-4 h-4" />
-                Record Video
-              </button>
-              <button className="px-6 py-2 bg-[#3a3a3a] text-white rounded-xl font-medium hover:bg-[#4a4a4a] transition flex items-center gap-2 border border-[#ff5555]/20">
-                <Upload className="w-4 h-4" />
-                Upload Video
-              </button>
-            </div>
-          </div>
+        <VideoRecorder
+          onVideoRecorded={handleVideoRecorded}
+          maxDuration={60}
+          minDuration={10}
+          theme="dark"
+        />
 
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#ff5555]/50 transition"
-          >
-            Skip for Now
-          </button>
-        </div>
+        <button
+          onClick={handleSkip}
+          disabled={loading}
+          className="w-full mt-4 bg-[#3a3a3a] text-white/70 py-3 rounded-xl font-medium hover:bg-[#4a4a4a] transition disabled:opacity-50 border border-[#ff5555]/20"
+        >
+          {loading ? 'Uploading...' : 'Skip for Now'}
+        </button>
       </div>
     </div>
   );
