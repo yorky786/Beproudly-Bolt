@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Flame } from 'lucide-react';
 import VideoRecorder from '../components/VideoRecorder';
 import { uploadVideo } from '../utils/video';
 
 export default function ProfileSetup() {
-  const { updateProfile } = useAuth();
+  const { updateProfile, user } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -72,6 +73,40 @@ export default function ProfileSetup() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVideoRecorded = async (blob: Blob, duration: number) => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: uploadData, error: uploadError } = await uploadVideo(
+        blob,
+        user.id,
+        'profiles'
+      );
+
+      if (uploadError || !uploadData) throw uploadError;
+
+      const { error: updateError } = await updateProfile({
+        profile_video_url: uploadData.url,
+        video_thumbnail_url: uploadData.thumbnailUrl,
+        video_duration: duration,
+      });
+
+      if (updateError) throw updateError;
+
+      window.location.href = '/discover';
+    } catch (err) {
+      console.error('Error uploading video:', err);
+      setError('Failed to upload video. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    window.location.href = '/discover';
   };
 
   if (step === 1) {
@@ -222,47 +257,6 @@ export default function ProfileSetup() {
       </div>
     );
   }
-
-  const handleVideoRecorded = async (blob: Blob, duration: number) => {
-    if (!formData.name) {
-      alert('Please complete the first step before adding video');
-      setStep(1);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data: { user } } = await updateProfile.auth.getUser();
-      if (!user) throw new Error('No user found');
-
-      const { data: uploadData, error: uploadError } = await uploadVideo(
-        blob,
-        user.id,
-        'profiles'
-      );
-
-      if (uploadError || !uploadData) throw uploadError;
-
-      const { error: updateError } = await updateProfile({
-        profile_video_url: uploadData.url,
-        video_thumbnail_url: uploadData.thumbnailUrl,
-        video_duration: duration,
-      });
-
-      if (updateError) throw updateError;
-
-      window.location.reload();
-    } catch (err) {
-      console.error('Error uploading video:', err);
-      alert('Failed to upload video. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSkip = () => {
-    window.location.reload();
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] flex items-center justify-center p-4">
