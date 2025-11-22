@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "BeProudly",
+    "slug": "beproudly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a1a"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beproudly.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BeProudly needs access to your camera to record BlazeBold videos and connect with others.",
+        "NSMicrophoneUsageDescription": "BeProudly needs access to your microphone to record videos with sound.",
+        "NSPhotoLibraryUsageDescription": "BeProudly needs access to your photo library to share media."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a1a"
+      },
+      "package": "com.beproudly.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BeProudly needs access to your camera to record BlazeBold videos."
+        }
+      ]
+    ]
+  }
+}
