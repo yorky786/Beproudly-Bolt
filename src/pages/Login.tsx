@@ -47,7 +47,10 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] flex items-center justify-center p-4">
       <div className="bg-[#2a2a2a] rounded-3xl shadow-2xl border border-[#ff5555]/20 p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-gradient-to-r from-[#ff5555] to-[#ff9500] rounded-full p-4 mb-4 shadow-lg shadow-[#ff5555]/50">
+          <div
+            className="bg-gradient-to-r from-[#ff5555] to-[#ff9500] rounded-full p-4 mb-4 shadow-lg shadow-[#ff5555]/50"
+            aria-hidden="true"
+          >
             <Flame className="w-8 h-8 text-white" fill="white" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#ff5555] to-[#ff9500] bg-clip-text text-transparent">
@@ -56,7 +59,7 @@ export default function Login() {
           <p className="text-white/70 mt-2">Video dating for LGBTQ+ community</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" aria-label={isLogin ? 'Sign in form' : 'Sign up form'}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
               Email
@@ -69,12 +72,16 @@ export default function Login() {
               className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none transition placeholder:text-white/40"
               placeholder="your@email.com"
               required
+              disabled={loading}
+              aria-required="true"
+              aria-invalid={error ? 'true' : 'false'}
+              aria-describedby={error ? 'login-error' : undefined}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
-              Password
+              Password {!isLogin && <span className="text-white/50 text-xs">(min. 8 characters)</span>}
             </label>
             <input
               id="password"
@@ -85,28 +92,51 @@ export default function Login() {
               placeholder="••••••••"
               required
               minLength={8}
+              disabled={loading}
+              aria-required="true"
+              aria-invalid={error ? 'true' : 'false'}
+              aria-describedby={error ? 'login-error' : undefined}
             />
           </div>
 
           {error && (
-            <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-xl text-sm">
+            <div
+              id="login-error"
+              className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-xl text-sm"
+              role="alert"
+              aria-live="polite"
+            >
               {error}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !email || !password}
             className="w-full bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#ff5555]/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={isLogin ? 'Sign in to your account' : 'Create new account'}
+            aria-busy={loading}
           >
-            {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                {isLogin ? 'Signing in...' : 'Creating account...'}
+              </span>
+            ) : (
+              isLogin ? 'Sign In' : 'Sign Up'
+            )}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-[#ff5555] hover:text-[#ff9500] font-medium transition"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }}
+            disabled={loading}
+            className="text-[#ff5555] hover:text-[#ff9500] font-medium transition disabled:opacity-50"
+            aria-label={isLogin ? 'Switch to sign up form' : 'Switch to sign in form'}
           >
             {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>

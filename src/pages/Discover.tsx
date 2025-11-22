@@ -262,7 +262,7 @@ export default function Discover() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] flex items-center justify-center p-4">
       <div className="max-w-md w-full">
-        <div className="mb-4 flex gap-3 items-center justify-center">
+        <div className="mb-4 flex gap-3 items-center justify-center" role="group" aria-label="Profile filter options">
           <button
             onClick={() => setShowNearby(false)}
             className={`px-4 py-2 rounded-xl font-medium transition ${
@@ -270,6 +270,8 @@ export default function Discover() {
                 ? 'bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white shadow-lg'
                 : 'bg-[#2a2a2a] text-white/70 border border-[#ff5555]/20'
             }`}
+            aria-label="Show all users"
+            aria-pressed={!showNearby}
           >
             All Users
           </button>
@@ -282,16 +284,19 @@ export default function Discover() {
                   ? 'bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white shadow-lg'
                   : 'bg-[#2a2a2a] text-white/70 border border-[#ff5555]/20'
               }`}
+              aria-label="Show nearby users only"
+              aria-pressed={showNearby}
             >
-              <Navigation className="w-4 h-4" />
+              <Navigation className="w-4 h-4" aria-hidden="true" />
               Nearby
             </button>
           ) : (
             <button
               onClick={enableLocation}
               className="px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 bg-[#2a2a2a] text-white/70 border border-[#ff5555]/20 hover:border-[#ff5555]/50"
+              aria-label="Enable location to see nearby users"
             >
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-4 h-4" aria-hidden="true" />
               Enable Location
             </button>
           )}
@@ -359,15 +364,19 @@ export default function Discover() {
               onClick={handlePass}
               disabled={swiping}
               className="w-16 h-16 bg-[#3a3a3a] border border-[#ff5555]/20 rounded-full flex items-center justify-center hover:bg-[#4a4a4a] transition disabled:opacity-50"
+              aria-label={`Pass on ${currentProfile.name}`}
+              aria-busy={swiping}
             >
-              <X className="w-8 h-8 text-white/70" />
+              <X className="w-8 h-8 text-white/70" aria-hidden="true" />
             </button>
             <button
               onClick={handleLike}
               disabled={swiping}
               className="w-20 h-20 bg-gradient-to-r from-[#ff5555] to-[#ff9500] rounded-full flex items-center justify-center hover:shadow-lg hover:shadow-[#ff5555]/50 transition disabled:opacity-50"
+              aria-label={`Like ${currentProfile.name}`}
+              aria-busy={swiping}
             >
-              <Heart className="w-10 h-10 text-white" fill="white" />
+              <Heart className="w-10 h-10 text-white" fill="white" aria-hidden="true" />
             </button>
           </div>
         </div>

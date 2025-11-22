@@ -8,6 +8,7 @@ export default function ProfileSetup() {
   const { updateProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     pronouns: '',
@@ -16,23 +17,58 @@ export default function ProfileSetup() {
     bio: '',
   });
 
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      setError('Name is required');
+      return false;
+    }
+    if (formData.name.length < 2) {
+      setError('Name must be at least 2 characters');
+      return false;
+    }
+    if (formData.name.length > 50) {
+      setError('Name must be less than 50 characters');
+      return false;
+    }
+
+    const age = parseInt(formData.age);
+    if (!age || age < 18 || age > 100) {
+      setError('You must be between 18 and 100 years old');
+      return false;
+    }
+
+    if (formData.bio && formData.bio.length > 500) {
+      setError('Bio must be less than 500 characters');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await updateProfile({
-        name: formData.name,
-        pronouns: formData.pronouns,
+      const { error: updateError } = await updateProfile({
+        name: formData.name.trim(),
+        pronouns: formData.pronouns.trim(),
         age: parseInt(formData.age),
-        location: formData.location,
-        bio: formData.bio,
+        location: formData.location.trim(),
+        bio: formData.bio.trim(),
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
       setStep(2);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating profile:', err);
+      setError(err.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -54,82 +90,132 @@ export default function ProfileSetup() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-label="Profile setup form">
             <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-white/90 mb-2">
                 Name *
               </label>
               <input
+                id="name"
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  setError('');
+                }}
                 className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none transition placeholder:text-white/40"
                 placeholder="Your name"
                 required
+                disabled={loading}
+                maxLength={50}
+                aria-required="true"
+                aria-invalid={error ? 'true' : 'false'}
+                aria-describedby={error ? 'profile-error' : undefined}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
+              <label htmlFor="pronouns" className="block text-sm font-medium text-white/90 mb-2">
                 Pronouns
               </label>
               <input
+                id="pronouns"
                 type="text"
                 value={formData.pronouns}
                 onChange={(e) => setFormData({ ...formData, pronouns: e.target.value })}
                 className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none transition placeholder:text-white/40"
                 placeholder="e.g., she/her, he/him, they/them"
+                disabled={loading}
+                maxLength={30}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
+              <label htmlFor="age" className="block text-sm font-medium text-white/90 mb-2">
                 Age *
               </label>
               <input
+                id="age"
                 type="number"
                 value={formData.age}
-                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, age: e.target.value });
+                  setError('');
+                }}
                 className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none transition placeholder:text-white/40"
                 placeholder="18"
                 required
                 min="18"
                 max="100"
+                disabled={loading}
+                aria-required="true"
+                aria-invalid={error ? 'true' : 'false'}
+                aria-describedby={error ? 'profile-error' : undefined}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
+              <label htmlFor="location" className="block text-sm font-medium text-white/90 mb-2">
                 Location
               </label>
               <input
+                id="location"
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none transition placeholder:text-white/40"
                 placeholder="City, State"
+                disabled={loading}
+                maxLength={100}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                Bio
+              <label htmlFor="bio" className="block text-sm font-medium text-white/90 mb-2">
+                Bio <span className="text-white/50 text-xs">({formData.bio.length}/500)</span>
               </label>
               <textarea
+                id="bio"
                 value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                onChange={(e) => {
+                  if (e.target.value.length <= 500) {
+                    setFormData({ ...formData, bio: e.target.value });
+                  }
+                }}
                 className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none resize-none transition placeholder:text-white/40"
                 placeholder="Tell us about yourself..."
                 rows={4}
+                disabled={loading}
+                maxLength={500}
               />
             </div>
 
+            {error && (
+              <div
+                id="profile-error"
+                className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-xl text-sm"
+                role="alert"
+                aria-live="polite"
+              >
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !formData.name || !formData.age}
               className="w-full bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-[#ff5555]/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Continue to video setup"
+              aria-busy={loading}
             >
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                  Saving...
+                </span>
+              ) : (
+                'Continue'
+              )}
             </button>
           </form>
         </div>
