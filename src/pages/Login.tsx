@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Flame } from 'lucide-react';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +14,20 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!isLogin) {
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        setError(passwordValidation.error || 'Invalid password');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -69,7 +84,7 @@ export default function Login() {
               className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#ff5555]/30 text-white rounded-xl focus:ring-2 focus:ring-[#ff5555] focus:border-transparent outline-none transition placeholder:text-white/40"
               placeholder="••••••••"
               required
-              minLength={6}
+              minLength={8}
             />
           </div>
 
