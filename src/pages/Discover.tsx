@@ -1,20 +1,95 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, Profile } from '../lib/supabase';
-import { Heart, X, AlertCircle, Play } from 'lucide-react';
+import { Heart, X, AlertCircle, Play, MapPin, Navigation } from 'lucide-react';
+import {
+  findNearbyUsers,
+  requestLocationPermission,
+  getCurrentPosition,
+  updateUserLocation,
+  formatDistance,
+  NearbyUser
+} from '../utils/location';
+
+interface ExtendedProfile extends Profile {
+  distance_km?: number;
+}
 
 export default function Discover() {
   const { user } = useAuth();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ExtendedProfile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
+  const [showNearby, setShowNearby] = useState(false);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [maxDistance, setMaxDistance] = useState(50);
 
   useEffect(() => {
-    loadProfiles();
-  }, [user]);
+    checkLocationPermission();
+  }, []);
+
+  useEffect(() => {
+    if (showNearby && locationEnabled) {
+      loadNearbyProfiles();
+    } else {
+      loadProfiles();
+    }
+  }, [user, showNearby]);
+
+  const checkLocationPermission = async () => {
+    const permission = await requestLocationPermission();
+    setLocationEnabled(permission.granted);
+  };
+
+  const enableLocation = async () => {
+    try {
+      const position = await getCurrentPosition();
+      await updateUserLocation(position, true);
+      setLocationEnabled(true);
+      setShowNearby(true);
+    } catch (error) {
+      console.error('Error enabling location:', error);
+      alert('Unable to access location. Please enable location permissions in your browser.');
+    }
+  };
+
+  const loadNearbyProfiles = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: nearbyData, error } = await findNearbyUsers(maxDistance, 50);
+
+      if (error) throw error;
+
+      const nearbyProfiles: ExtendedProfile[] = (nearbyData || []).map((nearby: NearbyUser) => ({
+        id: nearby.id,
+        name: nearby.name,
+        age: nearby.age,
+        location: nearby.location,
+        bio: nearby.bio,
+        profile_image_url: nearby.profile_image_url,
+        profile_video_url: null,
+        video_thumbnail_url: null,
+        video_duration: null,
+        pronouns: null,
+        created_at: '',
+        updated_at: '',
+        distance_km: nearby.distance_km,
+      }));
+
+      setProfiles(nearbyProfiles);
+    } catch (err) {
+      console.error('Error loading nearby profiles:', err);
+      setShowNearby(false);
+      await loadProfiles();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadProfiles = async () => {
     if (!user) return;
@@ -111,10 +186,10 @@ export default function Discover() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading profiles...</p>
+          <div className="w-12 h-12 border-4 border-[#ff5555] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/70">Loading profiles...</p>
         </div>
       </div>
     );
@@ -185,9 +260,44 @@ export default function Discover() {
   const currentProfile = profiles[currentIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] flex items-center justify-center p-4">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div className="mb-4 flex gap-3 items-center justify-center">
+          <button
+            onClick={() => setShowNearby(false)}
+            className={`px-4 py-2 rounded-xl font-medium transition ${
+              !showNearby
+                ? 'bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white shadow-lg'
+                : 'bg-[#2a2a2a] text-white/70 border border-[#ff5555]/20'
+            }`}
+          >
+            All Users
+          </button>
+
+          {locationEnabled ? (
+            <button
+              onClick={() => setShowNearby(true)}
+              className={`px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${
+                showNearby
+                  ? 'bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white shadow-lg'
+                  : 'bg-[#2a2a2a] text-white/70 border border-[#ff5555]/20'
+              }`}
+            >
+              <Navigation className="w-4 h-4" />
+              Nearby
+            </button>
+          ) : (
+            <button
+              onClick={enableLocation}
+              className="px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 bg-[#2a2a2a] text-white/70 border border-[#ff5555]/20 hover:border-[#ff5555]/50"
+            >
+              <MapPin className="w-4 h-4" />
+              Enable Location
+            </button>
+          )}
+        </div>
+
+        <div className="bg-[#2a2a2a] rounded-3xl shadow-2xl overflow-hidden border border-[#ff5555]/20">
           <div className="relative aspect-[9/16]">
             {currentProfile.profile_video_url ? (
               <div className="relative w-full h-full bg-black">
@@ -197,7 +307,7 @@ export default function Discover() {
                   className="w-full h-full object-cover"
                   controls
                 />
-                <div className="absolute top-4 right-4 bg-pink-500 text-white p-2 rounded-full">
+                <div className="absolute top-4 right-4 bg-gradient-to-r from-[#ff5555] to-[#ff9500] text-white p-2 rounded-full shadow-lg">
                   <Play className="w-5 h-5" fill="white" />
                 </div>
               </div>
@@ -208,15 +318,23 @@ export default function Discover() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-pink-200 to-purple-200 flex items-center justify-center">
-                <div className="text-center text-gray-600">
+              <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a] flex items-center justify-center">
+                <div className="text-center text-white/50">
                   <Heart className="w-16 h-16 mx-auto mb-2 opacity-50" />
                   <p>No photo</p>
                 </div>
               </div>
             )}
 
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-6">
+              {currentProfile.distance_km !== undefined && (
+                <div className="mb-2 inline-flex items-center gap-1 bg-[#ff5555]/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                  <Navigation className="w-3 h-3 text-[#ff5555]" />
+                  <span className="text-white text-xs font-medium">
+                    {formatDistance(currentProfile.distance_km)}
+                  </span>
+                </div>
+              )}
               <h3 className="text-3xl font-bold text-white mb-1">
                 {currentProfile.name}
                 {currentProfile.age && `, ${currentProfile.age}`}
@@ -225,7 +343,10 @@ export default function Discover() {
                 <p className="text-white/90 text-sm mb-2">{currentProfile.pronouns}</p>
               )}
               {currentProfile.location && (
-                <p className="text-white/80 text-sm mb-3">{currentProfile.location}</p>
+                <div className="flex items-center gap-1 text-white/80 text-sm mb-3">
+                  <MapPin className="w-4 h-4" />
+                  {currentProfile.location}
+                </div>
               )}
               {currentProfile.bio && (
                 <p className="text-white/90 text-sm line-clamp-3">{currentProfile.bio}</p>
@@ -233,25 +354,25 @@ export default function Discover() {
             </div>
           </div>
 
-          <div className="p-6 flex gap-4 justify-center">
+          <div className="p-6 flex gap-4 justify-center bg-[#1a1a1a]/50">
             <button
               onClick={handlePass}
               disabled={swiping}
-              className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition disabled:opacity-50"
+              className="w-16 h-16 bg-[#3a3a3a] border border-[#ff5555]/20 rounded-full flex items-center justify-center hover:bg-[#4a4a4a] transition disabled:opacity-50"
             >
-              <X className="w-8 h-8 text-gray-600" />
+              <X className="w-8 h-8 text-white/70" />
             </button>
             <button
               onClick={handleLike}
               disabled={swiping}
-              className="w-20 h-20 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center hover:from-pink-600 hover:to-purple-600 transition shadow-lg disabled:opacity-50"
+              className="w-20 h-20 bg-gradient-to-r from-[#ff5555] to-[#ff9500] rounded-full flex items-center justify-center hover:shadow-lg hover:shadow-[#ff5555]/50 transition disabled:opacity-50"
             >
               <Heart className="w-10 h-10 text-white" fill="white" />
             </button>
           </div>
         </div>
 
-        <div className="text-center mt-4 text-sm text-gray-600">
+        <div className="text-center mt-4 text-sm text-white/70">
           {currentIndex + 1} of {profiles.length} profiles
         </div>
       </div>
