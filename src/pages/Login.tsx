@@ -11,6 +11,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
+  const handleTestLogin = () => {
+    setEmail('test@beproudly.com');
+    setPassword('testpassword123');
+    setIsLogin(true);
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -139,6 +146,28 @@ export default function Login() {
             aria-label={isLogin ? 'Switch to sign up form' : 'Switch to sign in form'}
           >
             {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          </button>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-[#ff5555]/20">
+          <div className="text-center mb-3">
+            <p className="text-white/50 text-xs mb-2">Test Credentials</p>
+            <div className="bg-[#1a1a1a] rounded-lg p-3 mb-3 border border-[#ff5555]/20">
+              <p className="text-white/70 text-xs mb-1">
+                <span className="text-white/50">Email:</span> test@beproudly.com
+              </p>
+              <p className="text-white/70 text-xs">
+                <span className="text-white/50">Password:</span> testpassword123
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleTestLogin}
+            disabled={loading}
+            className="w-full bg-[#3a3a3a] text-white/90 py-2 rounded-xl text-sm font-medium hover:bg-[#4a4a4a] transition disabled:opacity-50 border border-[#ff5555]/20"
+            aria-label="Fill test credentials"
+          >
+            Use Test Credentials
           </button>
         </div>
       </div>
